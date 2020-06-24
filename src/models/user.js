@@ -28,6 +28,13 @@ UserSchema.pre('save', async function(next) {
 
     next();
 });
+UserSchema.pre('save', async function(next) {
+    const agora = await Date.now;
+    if(!this.criadoEm)
+        this.criadoEm = agora;
+        
+    next();
+});
 const User = mongoose.model('User', UserSchema);
 
 module.exports = User;

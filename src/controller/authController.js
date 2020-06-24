@@ -1,17 +1,22 @@
-const express = require('express');
-const router = express.Router();
-const User = require('../models/user');
-const bcrypt = require('bcryptjs');
+const express = require('express')
+const router = express.Router()
+const User = require('../models/user')
+const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
+const authConfig = require('../config/auth.json')
 
-// Rota de criação de tabela de usuario recebendo os dados do usuario
-// verifica se o usuario ja existe, se sim retorna erro
-// faz com que nao retorne a senha para o usuario (linha 19)
+// Função geradora de Token
+function generatorToken (params = {}) {
+    return jwt.sign(params, authConfig.secret, {
+        expiresIn: 86400,
+    });
+}
+
+// Rota de criação de usuario
 router.post('/register', async function(req, res) {
-        // desestrutura a requisição, retornando apenas o email para a verificação
         const { email } = req.body;
 
         try{
-        // verifica se o usuario atraves do email ja existe
         if (await User.findOne({ email }))
           return res.status(400).send({Atenção: 'Este email já existe!'});
 
@@ -19,12 +24,16 @@ router.post('/register', async function(req, res) {
 
         user.password = undefined;
 
-        return res.send({user});
+        return res.send({
+            user,
+            token: generatorToken({ id: user.id }),
+        });
     }catch(err) {
         return res.status(400).send({error:'Registro inváldo!'})
     }
 });
 
+// Rota de autenticação de usuário pelo email e senha
 router.post('/authentication', async function(req, res) {
     const { email, password } = req.body;
 
@@ -37,7 +46,11 @@ router.post('/authentication', async function(req, res) {
        return res.status(400).send({ error: 'Senha inválida!'});
     
     user.password = undefined;
-    res.send({ user });
-})
+
+    res.send({ 
+        user, 
+        token: generatorToken({ id: user.id }),
+    });
+}),
 
 module.exports = router;
